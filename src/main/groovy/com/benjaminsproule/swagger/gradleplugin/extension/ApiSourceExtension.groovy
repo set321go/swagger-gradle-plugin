@@ -17,6 +17,7 @@ class ApiSourceExtension extends ApiSource {
     List<String> apiModelPropertyAccessExclusionsList
     List<String> typesToSkipList
     boolean attachSwaggerArtifact
+    def excludeFiles = ['*.pom']
 
     ApiSourceExtension(Project project) {
         this.project = project
@@ -70,13 +71,16 @@ class ApiSourceExtension extends ApiSource {
     }
 
     private ClassLoader prepareClassLoader() {
-        List<URL> urls = new ArrayList<>();
+        List<URL> urls = new ArrayList<>()
+        def regex = excludeFiles.join('|')
         project.configurations.runtime.resolve().each {
-            if (!it.name.endsWith('.pom')) {
+            if (!it.name.matches(regex)) {
                 urls.add(it.toURI().toURL())
             }
         }
-        urls.add(project.sourceSets.main.output.classesDir.toURI().toURL())
+        project.sourceSets.main.output.classesDirs.each {
+            urls.add(it.toURI().toURL())
+        }
         return new URLClassLoader(urls as URL[], this.getClass().getClassLoader())
     }
 
